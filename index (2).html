@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnóstico de Eficiencia Operacional — Spherical × Zenit</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff; --bg-secondary: #f7f7f5;
+      --text-primary: #1a1a1a; --text-secondary: #6b6b6b; --text-tertiary: #9a9a9a;
+      --border-light: rgba(0,0,0,0.1); --border-medium: rgba(0,0,0,0.18); --border-strong: rgba(0,0,0,0.35);
+      --radius-md: 8px; --radius-lg: 12px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a1a; --bg-secondary: #242424;
+        --text-primary: #f0f0f0; --text-secondary: #a0a0a0; --text-tertiary: #606060;
+        --border-light: rgba(255,255,255,0.08); --border-medium: rgba(255,255,255,0.15); --border-strong: rgba(255,255,255,0.3);
+      }
+    }
+
+    body { font-family: var(--font); background: var(--bg); color: var(--text-primary); min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem 4rem; }
+    .shell { width: 100%; max-width: 620px; }
+
+    /* Header */
+    .header { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 0.5px solid var(--border-light); }
+    .header-brand { font-size: 12px; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .header h1 { font-size: 22px; font-weight: 500; line-height: 1.3; }
+
+    /* Progress */
+    .progress-wrap { margin-bottom: 2.5rem; }
+    .progress-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-tertiary); margin-bottom: 8px; }
+    .progress-bar { height: 2px; background: var(--border-light); border-radius: 2px; }
+    .progress-fill { height: 100%; background: var(--text-primary); border-radius: 2px; transition: width 0.4s ease; }
+
+    /* Steps */
+    .step { display: none; } .step.active { display: block; }
+    .step-title { font-size: 20px; font-weight: 500; line-height: 1.4; margin-bottom: 0.5rem; }
+    .step-sub { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 2rem; }
+
+    /* Fields */
+    .field-group { display: grid; gap: 14px; margin-bottom: 2rem; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+    .field input, .field select {
+      width: 100%; padding: 12px 14px;
+      background: var(--bg); color: var(--text-primary);
+      border: 0.5px solid var(--border-medium); border-radius: var(--radius-md);
+      font-size: 15px; font-family: var(--font);
+      outline: none; transition: border-color 0.15s;
+      -webkit-appearance: none; appearance: none;
+    }
+    .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239a9a9a' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+    .field input:focus, .field select:focus { border-color: var(--text-primary); }
+    .field input::placeholder { color: var(--text-tertiary); }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field-optional { font-size: 11px; color: var(--text-tertiary); margin-left: 4px; font-weight: 400; }
+    .field-error { font-size: 12px; color: #A32D2D; margin-top: 2px; display: none; }
+    .field input.invalid, .field select.invalid { border-color: #E24B4A; }
+
+    /* Consent */
+    .consent-wrap { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 0.5px solid var(--border-medium); border-radius: var(--radius-lg); cursor: pointer; }
+    .consent-wrap:hover { border-color: var(--border-strong); background: var(--bg-secondary); }
+    .consent-wrap.checked { border: 1.5px solid var(--text-primary); }
+    .consent-box { width: 18px; height: 18px; min-width: 18px; border-radius: 4px; border: 1.5px solid var(--border-medium); margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+    .consent-wrap.checked .consent-box { background: var(--text-primary); border-color: var(--text-primary); }
+    .consent-check { display: none; font-size: 11px; color: var(--bg); font-weight: 700; }
+    .consent-wrap.checked .consent-check { display: block; }
+    .consent-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .consent-error { font-size: 12px; color: #A32D2D; margin-top: 6px; display: none; }
+
+    /* Options */
+    .options { display: grid; gap: 10px; margin-bottom: 0.5rem; }
+    .option { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border: 0.5px solid var(--border-medium); border-radius: var(--radius-lg); cursor: pointer; background: var(--bg); transition: border-color 0.15s, background 0.15s; text-align: left; width: 100%; font-family: var(--font); }
+    .option:hover { border-color: var(--border-strong); background: var(--bg-secondary); }
+    .option.selected { border: 1.5px solid var(--text-primary); }
+    .option-dot { width: 18px; height: 18px; min-width: 18px; border-radius: 50%; border: 1.5px solid var(--border-medium); margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+    .option.selected .option-dot { background: var(--text-primary); border-color: var(--text-primary); }
+    .option.selected .option-dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--bg); }
+    .option-label { font-size: 15px; color: var(--text-primary); line-height: 1.4; }
+    .option-hint { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+    /* Slider */
+    .slider-section { margin: 0.5rem 0 2rem; }
+    .slider-display { font-size: 36px; font-weight: 500; line-height: 1; margin-bottom: 0.5rem; }
+    .slider-display span { font-size: 16px; font-weight: 400; color: var(--text-secondary); margin-left: 4px; }
+    input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: var(--border-light); border-radius: 2px; outline: none; margin: 1rem 0 0.5rem; cursor: pointer; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--text-primary); cursor: pointer; border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--border-medium); }
+    input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--text-primary); cursor: pointer; border: 2px solid var(--bg); }
+    .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); }
+
+    /* Nav */
+    .nav { display: flex; gap: 10px; align-items: center; margin-top: 2rem; }
+    .btn-next { padding: 12px 28px; background: var(--text-primary); color: var(--bg); border: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: opacity 0.15s; }
+    .btn-next:hover { opacity: 0.8; } .btn-next:disabled { opacity: 0.25; cursor: not-allowed; }
+    .btn-back { padding: 12px 20px; background: transparent; color: var(--text-secondary); border: 0.5px solid var(--border-medium); border-radius: var(--radius-md); font-size: 15px; cursor: pointer; font-family: var(--font); transition: background 0.15s; }
+    .btn-back:hover { background: var(--bg-secondary); }
+
+    /* Result */
+    .result { display: none; } .result.active { display: block; }
+    .result-eyebrow { font-size: 12px; font-weight: 500; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
+    .maturity-tag { display: inline-block; padding: 4px 12px; border-radius: var(--radius-md); font-size: 12px; font-weight: 500; margin-bottom: 1.25rem; }
+    .tag-low { background: #FCEBEB; color: #A32D2D; }
+    .tag-mid { background: #FAEEDA; color: #854F0B; }
+    .tag-high { background: #EAF3DE; color: #3B6D11; }
+    .result-number { font-size: 52px; font-weight: 500; line-height: 1; margin-bottom: 0.75rem; letter-spacing: -0.02em; }
+    .result-sub { font-size: 15px; color: var(--text-secondary); line-height: 1.7; max-width: 520px; }
+    .recovery-box { display: flex; gap: 12px; margin: 1.5rem 0; }
+    .recovery-card { flex: 1; background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+    .recovery-label { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .recovery-value { font-size: 22px; font-weight: 500; }
+    .breakdown { margin: 2rem 0; border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; }
+    .breakdown-header { padding: 12px 16px; background: var(--bg-secondary); border-bottom: 0.5px solid var(--border-light); font-size: 11px; font-weight: 500; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; }
+    .breakdown-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 0.5px solid var(--border-light); }
+    .breakdown-row:last-child { border-bottom: none; }
+    .breakdown-left { flex: 1; } .breakdown-name { font-size: 14px; margin-bottom: 6px; }
+    .bar-wrap { height: 3px; background: var(--border-light); border-radius: 2px; }
+    .bar-fill { height: 3px; background: var(--text-primary); border-radius: 2px; transition: width 0.6s ease; }
+    .breakdown-amount { font-size: 15px; font-weight: 500; white-space: nowrap; }
+
+    /* CTA */
+    .cta-box { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 1.5rem; margin-top: 2rem; }
+    .cta-greeting { font-size: 13px; color: var(--text-secondary); margin-bottom: 0.5rem; }
+    .cta-text { font-size: 15px; line-height: 1.7; margin-bottom: 1.25rem; }
+    .cta-btn { display: block; width: 100%; padding: 14px; background: var(--text-primary); color: var(--bg); border: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 500; cursor: pointer; font-family: var(--font); text-align: center; text-decoration: none; transition: opacity 0.15s; }
+    .cta-btn:hover { opacity: 0.82; }
+
+    /* Save */
+    .save-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-tertiary); margin-top: 1rem; min-height: 20px; }
+    .save-dot { width: 7px; height: 7px; border-radius: 50%; background: transparent; flex-shrink: 0; }
+    .save-dot.saving { background: #EF9F27; animation: pulse 1s infinite; }
+    .save-dot.saved { background: #639922; }
+    .save-dot.error { background: #E24B4A; }
+    @keyframes pulse { 0%,100%{opacity:1;}50%{opacity:0.3;} }
+
+    .restart { display: inline-block; margin-top: 1.25rem; font-size: 13px; color: var(--text-tertiary); cursor: pointer; text-decoration: underline; background: none; border: none; font-family: var(--font); padding: 0; }
+    .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border-light); font-size: 12px; color: var(--text-tertiary); line-height: 1.6; }
+
+    @media (max-width: 480px) {
+      .result-number { font-size: 38px; }
+      .recovery-box { flex-direction: column; }
+      .field-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="header">
+    <p class="header-brand">Spherical × Zenit</p>
+    <h1>¿Cuánto está perdiendo tu equipo por no operar de forma óptima?</h1>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span id="step-label">Paso 1 de 9 — Registro</span>
+      <span id="step-pct">10%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="prog" style="width:10%"></div></div>
+  </div>
+
+  <!-- PASO 0: Registro -->
+  <div class="step active" id="s0">
+    <h2 class="step-title">Antes de comenzar, cuéntanos quién eres</h2>
+    <p class="step-sub">Usaremos esta información solo para enviarte el análisis y hacer seguimiento contigo si lo necesitas.</p>
+    <div class="field-group">
+      <div class="field-row">
+        <div class="field">
+          <label for="f-nombre">Nombre *</label>
+          <input type="text" id="f-nombre" placeholder="Tu nombre" autocomplete="given-name">
+          <span class="field-error" id="e-nombre">Ingresa tu nombre</span>
+        </div>
+        <div class="field">
+          <label for="f-empresa">Empresa *</label>
+          <input type="text" id="f-empresa" placeholder="Nombre de tu empresa" autocomplete="organization">
+          <span class="field-error" id="e-empresa">Ingresa tu empresa</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-industria">Industria *</label>
+        <select id="f-industria">
+          <option value="">Selecciona tu industria</option>
+          <option value="Manufactura">Manufactura</option>
+          <option value="Retail y comercio">Retail y comercio</option>
+          <option value="Servicios profesionales">Servicios profesionales</option>
+          <option value="Construcción e inmobiliaria">Construcción e inmobiliaria</option>
+          <option value="Agro e industria alimentaria">Agro e industria alimentaria</option>
+          <option value="Logística y transporte">Logística y transporte</option>
+          <option value="Salud">Salud</option>
+          <option value="Tecnología">Tecnología</option>
+          <option value="Educación">Educación</option>
+          <option value="Finanzas y seguros">Finanzas y seguros</option>
+          <option value="Hotelería y turismo">Hotelería y turismo</option>
+          <option value="Otra">Otra</option>
+        </select>
+        <span class="field-error" id="e-industria">Selecciona tu industria</span>
+      </div>
+      <div class="field">
+        <label for="f-cargo">Cargo *</label>
+        <input type="text" id="f-cargo" placeholder="Ej: Gerente General, Dueño, Gerente de Operaciones" autocomplete="organization-title">
+        <span class="field-error" id="e-cargo">Ingresa tu cargo</span>
+      </div>
+      <div class="field">
+        <label for="f-email">Email *</label>
+        <input type="email" id="f-email" placeholder="tu@empresa.com" autocomplete="email">
+        <span class="field-error" id="e-email">Ingresa un email válido</span>
+      </div>
+      <div class="field">
+        <label for="f-telefono">Teléfono <span class="field-optional">(opcional)</span></label>
+        <input type="tel" id="f-telefono" placeholder="+56 9 xxxx xxxx" autocomplete="tel">
+      </div>
+      <div>
+        <div class="consent-wrap" id="consent-wrap" onclick="toggleConsent()">
+          <div class="consent-box">
+            <span class="consent-check">✓</span>
+          </div>
+          <p class="consent-text">Acepto que Spherical × Zenit me contacte con información sobre este diagnóstico y posibles soluciones para mi equipo.</p>
+        </div>
+        <p class="consent-error" id="e-consent">Debes aceptar para continuar</p>
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn-next" onclick="registrar()">Comenzar diagnóstico →</button>
+    </div>
+  </div>
+
+  <!-- S1 -->
+  <div class="step" id="s1">
+    <h2 class="step-title">¿Cuántas personas tiene el equipo que quieres evaluar?</h2>
+    <p class="step-sub">Puede ser un área específica o toda la empresa. Si no estás seguro, usa el número total de colaboradores.</p>
+    <div class="slider-section">
+      <div class="slider-display" id="v1">12 <span>personas</span></div>
+      <input type="range" min="2" max="100" value="12" step="1" id="r1">
+      <div class="slider-labels"><span>2</span><span>25</span><span>50</span><span>100</span></div>
+    </div>
+    <div class="nav"><button class="btn-back" onclick="showStep(0)">← Volver</button><button class="btn-next" onclick="next(1)">Continuar →</button></div>
+  </div>
+
+  <!-- S2 -->
+  <div class="step" id="s2">
+    <h2 class="step-title">¿Cuál es el costo mensual promedio por persona, incluyendo cargas?</h2>
+    <p class="step-sub">Incluye sueldo bruto más todas las cargas asociadas al empleador.</p>
+    <div class="options" id="o2">
+      <button class="option" onclick="sel(this,'o2','a')"><div class="option-dot"></div><div><div class="option-label">Menos de $800.000</div><div class="option-hint">Cargos operativos o administrativos junior</div></div></button>
+      <button class="option" onclick="sel(this,'o2','b')"><div class="option-dot"></div><div><div class="option-label">$800.000 – $1.500.000</div><div class="option-hint">Perfil medio, administrativo o técnico</div></div></button>
+      <button class="option" onclick="sel(this,'o2','c')"><div class="option-dot"></div><div><div class="option-label">$1.500.000 – $2.500.000</div><div class="option-hint">Profesionales o jefaturas</div></div></button>
+      <button class="option" onclick="sel(this,'o2','d')"><div class="option-dot"></div><div><div class="option-label">Más de $2.500.000</div><div class="option-hint">Gerentes, especialistas o perfiles senior</div></div></button>
+    </div>
+    <div class="nav"><button class="btn-back" onclick="showStep(1)">← Volver</button><button class="btn-next" id="n2" disabled onclick="next(2)">Continuar →</button></div>
+  </div>
+
+  <!-- S3 -->
+  <div class="step" id="s3">
+    <h2 class="step-title">¿Qué porcentaje del tiempo dedica tu equipo a tareas que se repiten igual cada semana?</h2>
+    <p class="step-sub">Tareas que no requieren criterio especial: ingresos de datos, reportes manuales, reenvío de información, copiar de un sistema a otro, etc.</p>
+    <div class="options" id="o3">
+      <button class="option" onclick="sel(this,'o3','a')"><div class="option-dot"></div><div class="option-label">Menos del 10% del tiempo</div></button>
+      <button class="option" onclick="sel(this,'o3','b')"><div class="option-dot"></div><div class="option-label">Entre 10% y 25% del tiempo</div></button>
+      <button class="option" onclick="sel(this,'o3','c')"><div class="option-dot"></div><div class="option-label">Entre 25% y 40% del tiempo</div></button>
+      <button class="option" onclick="sel(this,'o3','d')"><div class="option-dot"></div><div class="option-label">Más del 40% del tiempo</div></button>
+    </div>
+    <div class="nav"><button class="btn-back" onclick="showStep(2)">← Volver</button><button class="btn-next" id="n3" disabled onclick="next(3)">Continuar →</button></div>
+  </div>
+
+  <!-- S4 -->
+  <div class="step" id="s4">
+    <h2 class="step-title">¿Cuántas de esas tareas repetitivas están automatizadas o gestionadas con herramientas digitales hoy?</h2>
+    <p class="step-sub">Incluye cualquier software, macro, integración o herramienta que ejecute la tarea sin intervención manual constante.</p>
+    <div class="options" id="o4">
+      <button class="option" onclick="sel(this,'o4','a')"><div class="option-dot"></div><div class="option-label">Ninguna — todo se hace de forma manual</div></button>
+      <button class="option" onclick="sel(this,'o4','b')"><div class="option-dot"></div><div><div class="option-label">Algunas, pero de forma parcial</div><div class="option-hint">Hay herramientas, pero igual requieren bastante intervención manual</div></div></button>
+      <button class="option" onclick="sel(this,'o4','c')"><div class="option-dot"></div><div><div class="option-label">La mayoría están automatizadas</div><div class="option-hint">El equipo interviene solo en excepciones</div></div></button>
+    </div>
+    <div class="nav"><button class="btn-back" onclick="showStep(3)">← Volver</button><button class="btn-next" id="n4" disabled onclick="next(4)">Continuar →</button></div>
+  </div>
+
+  <!-- S5 -->
+  <div class="step" id="s5">
+    <h2 class="step-title">¿Cuántas horas semanales dedica tu equipo a reuniones internas?</h2>
+    <p class="step-sub">Promedio por persona. Incluye reuniones de equipo, coordinaciones, revisiones de avance y cualquier junta interna.</p>
+    <div class="slider-section">
+      <div class="slider-display" id="v5">5 <span>horas / semana por persona</span></div>
+      <input type="range" min="1" max="20" value="5" step="1" id="r5">
+      <div class="slider-labels"><span>1h</span><span>5h</span><span>10h</span><span>20h</span></div>
+    </div>
+    <div class="nav"><button class="btn-back" onclick="showStep(4)">← Volver</button><button class="btn-next" onclick="next(5)">Continuar →</button></div>
+  </div>
+
+  <!-- S6 -->
+  <div class="step" id="s6">
+    <h2 class="step-title">Cuando termina una reunión, ¿qué pasa con los compromisos y tareas que surgieron?</h2>
+    <p class="step-sub">Sé honesto. Esta es la pregunta que más impacta el resultado.</p>
+    <div class="options" id="o6">
+      <button class="option" onclick="sel(this,'o6','a')"><div class="option-dot"></div><div><div class="option-label">Se registran y hay seguimiento formal</div><div class="option-hint">Existe un sistema y alguien es responsable siempre</div></div></button>
+      <button class="option" onclick="sel(this,'o6','b')"><div class="option-dot"></div><div><div class="option-label">Se registran, pero el seguimiento es irregular</div><div class="option-hint">A veces se cumple, a veces no</div></div></button>
+      <button class="option" onclick="sel(this,'o6','c')"><div class="option-dot"></div><div><div class="option-label">Depende de cada persona</div><div class="option-hint">Algunos son rigurosos, otros no tanto</div></div></button>
+      <button class="option" onclick="sel(this,'o6','d')"><div class="option-dot"></div><div><div class="option-label">Generalmente no se registran</div><div class="option-hint">Los compromisos quedan en la memoria de los participantes</div></div></button>
+    </div>
+    <div class="nav"><button class="btn-back" onclick="showStep(5)">← Volver</button><button class="btn-next" id="n6" disabled onclick="next(6)">Continuar →</button></div>
+  </div>
+
+  <!-- S7 -->
+  <div class="step" id="s7">
+    <h2 class="step-title">¿Con qué frecuencia tu equipo repite trabajo por errores, versiones desactualizadas o malentendidos?</h2>
+    <p class="step-sub">Incluye rehacer informes, corregir errores por información incorrecta, o trabajar sobre versiones antiguas de documentos.</p>
+    <div class="options" id="o7">
+      <button class="option" onclick="sel(this,'o7','a')"><div class="option-dot"></div><div class="option-label">Casi nunca ocurre</div></button>
+      <button class="option" onclick="sel(this,'o7','b')"><div class="option-dot"></div><div class="option-label">Una o dos veces al mes</div></button>
+      <button class="option" onclick="sel(this,'o7','c')"><div class="option-dot"></div><div class="option-label">Varias veces por semana</div></button>
+      <button class="option" onclick="sel(this,'o7','d')"><div class="option-dot"></div><div class="option-label">Es parte del día a día del equipo</div></button>
+    </div>
+    <div class="nav"><button class="btn-back" onclick="showStep(6)">← Volver</button><button class="btn-next" id="n7" disabled onclick="next(7)">Continuar →</button></div>
+  </div>
+
+  <!-- S8 -->
+  <div class="step" id="s8">
+    <h2 class="step-title">¿Tu equipo usa inteligencia artificial o herramientas digitales avanzadas en su trabajo diario?</h2>
+    <p class="step-sub">Incluye herramientas como ChatGPT, Copilot, automatizaciones, integraciones entre sistemas, etc.</p>
+    <div class="options" id="o8">
+      <button class="option" onclick="sel(this,'o8','a')"><div class="option-dot"></div><div><div class="option-label">No usamos ninguna</div><div class="option-hint">Trabajamos con las herramientas de siempre</div></div></button>
+      <button class="option" onclick="sel(this,'o8','b')"><div class="option-dot"></div><div><div class="option-label">Experimentamos, pero sin sistematicidad</div><div class="option-hint">Algunas personas las usan por iniciativa propia</div></div></button>
+      <button class="option" onclick="sel(this,'o8','c')"><div class="option-dot"></div><div><div class="option-label">Sí, varias personas las usan regularmente</div><div class="option-hint">Hay adopción real, aunque no es total</div></div></button>
+    </div>
+    <div class="nav"><button class="btn-back" onclick="showStep(7)">← Volver</button><button class="btn-next" id="n8" disabled onclick="calcular()">Ver mi diagnóstico →</button></div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="result" id="resultado">
+    <p class="result-eyebrow">Diagnóstico de eficiencia operacional</p>
+    <div id="maturity-tag" class="maturity-tag"></div>
+    <div class="result-number" id="res-num"></div>
+    <p class="result-sub" id="res-sub"></p>
+    <div class="recovery-box">
+      <div class="recovery-card"><div class="recovery-label">Recuperable en 90 días</div><div class="recovery-value" id="rec-90"></div></div>
+      <div class="recovery-card"><div class="recovery-label">Pérdida como % del costo</div><div class="recovery-value" id="rec-pct"></div></div>
+    </div>
+    <div class="breakdown">
+      <div class="breakdown-header">Desglose por fuente</div>
+      <div class="breakdown-row"><div class="breakdown-left"><div class="breakdown-name">Tareas repetitivas sin automatizar</div><div class="bar-wrap"><div class="bar-fill" id="bar1" style="width:0%"></div></div></div><div class="breakdown-amount" id="amt1"></div></div>
+      <div class="breakdown-row"><div class="breakdown-left"><div class="breakdown-name">Reuniones sin seguimiento efectivo</div><div class="bar-wrap"><div class="bar-fill" id="bar2" style="width:0%"></div></div></div><div class="breakdown-amount" id="amt2"></div></div>
+      <div class="breakdown-row"><div class="breakdown-left"><div class="breakdown-name">Retrabajo y errores evitables</div><div class="bar-wrap"><div class="bar-fill" id="bar3" style="width:0%"></div></div></div><div class="breakdown-amount" id="amt3"></div></div>
+    </div>
+    <div class="cta-box">
+      <p class="cta-greeting" id="cta-greeting"></p>
+      <p class="cta-text" id="cta-text"></p>
+      <a href="https://calendar.app.google/bVWbKqzpaYKHT23q9" class="cta-btn" target="_blank" rel="noopener">Agenda 30 minutos para revisar estos números →</a>
+    </div>
+    <div class="save-status"><div class="save-dot" id="save-dot"></div><span id="save-msg"></span></div>
+    <button class="restart" onclick="reiniciar()">Hacer el diagnóstico de otro equipo</button>
+  </div>
+
+  <div class="footer">Los resultados son estimaciones basadas en promedios de mercado y los datos que ingresaste. No reemplazan un análisis financiero formal. © Spherical & Zenit.</div>
+
+</div>
+<script>
+  // ── CONFIGURACIÓN ──────────────────────────────────────────────────────
+  const APPS_SCRIPT_URL = 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
+  // ──────────────────────────────────────────────────────────────────────
+
+  const answers  = {};
+  const registro = {};
+  let   consentido = false;
+
+  // Sliders
+  const r1 = document.getElementById('r1');
+  const v1 = document.getElementById('v1');
+  r1.addEventListener('input', () => { v1.innerHTML = r1.value + ' <span>personas</span>'; });
+  const r5 = document.getElementById('r5');
+  const v5 = document.getElementById('v5');
+  r5.addEventListener('input', () => { v5.innerHTML = r5.value + ' <span>horas / semana por persona</span>'; });
+
+  // Consent toggle
+  function toggleConsent() {
+    consentido = !consentido;
+    const wrap = document.getElementById('consent-wrap');
+    wrap.classList.toggle('checked', consentido);
+    if (consentido) document.getElementById('e-consent').style.display = 'none';
+  }
+
+  // Progress
+  function updateProgress(step) {
+    const pct = Math.round(((step + 1) / 10) * 100);
+    document.getElementById('prog').style.width = Math.min(pct, 100) + '%';
+    document.getElementById('step-label').textContent = step === 0 ? 'Paso 1 de 9 — Registro' : 'Pregunta ' + step + ' de 8';
+    document.getElementById('step-pct').textContent = Math.min(pct, 100) + '%';
+  }
+
+  function showStep(n) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById('s' + n);
+    if (el) { el.classList.add('active'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    updateProgress(n);
+  }
+
+  // Validar registro
+  function registrar() {
+    const nombre   = document.getElementById('f-nombre').value.trim();
+    const empresa  = document.getElementById('f-empresa').value.trim();
+    const industria= document.getElementById('f-industria').value;
+    const cargo    = document.getElementById('f-cargo').value.trim();
+    const email    = document.getElementById('f-email').value.trim();
+    const tel      = document.getElementById('f-telefono').value.trim();
+    let valid = true;
+
+    function check(val, inputId, errorId, isEmail, isSelect) {
+      const input = document.getElementById(inputId);
+      const err   = document.getElementById(errorId);
+      let ok = isEmail ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) : val.length > 0;
+      if (!ok) { input.classList.add('invalid'); err.style.display = 'block'; valid = false; }
+      else { input.classList.remove('invalid'); err.style.display = 'none'; }
+    }
+
+    check(nombre,    'f-nombre',    'e-nombre',    false);
+    check(empresa,   'f-empresa',   'e-empresa',   false);
+    check(industria, 'f-industria', 'e-industria', false);
+    check(cargo,     'f-cargo',     'e-cargo',     false);
+    check(email,     'f-email',     'e-email',     true);
+
+    if (!consentido) {
+      document.getElementById('e-consent').style.display = 'block';
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    registro.nombre       = nombre;
+    registro.empresa      = empresa;
+    registro.industria    = industria;
+    registro.cargo        = cargo;
+    registro.email        = email;
+    registro.telefono     = tel;
+    registro.consentimiento = true;
+
+    showStep(1);
+  }
+
+  function next(from) {
+    if (from === 1) answers.personas = parseInt(r1.value);
+    if (from === 5) answers.horasReunion = parseInt(r5.value);
+    showStep(from + 1);
+  }
+
+  function sel(el, group, val) {
+    document.querySelectorAll('#' + group + ' .option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    answers[group] = val;
+    const btn = document.getElementById('n' + group.replace('o',''));
+    if (btn) btn.disabled = false;
+  }
+
+  function fmt(n) { return '$' + Math.round(n).toLocaleString('es-CL'); }
+
+  function calcular() {
+    const personas   = answers.personas || 12;
+    const costoMap   = { a:640000, b:1150000, c:2000000, d:3300000 };
+    const costoMens  = costoMap[answers.o2] || 1150000;
+    const costoAnual = personas * costoMens * 12;
+
+    const repMap     = { a:0.05, b:0.17, c:0.32, d:0.45 };
+    const pctRep     = repMap[answers.o3] || 0.17;
+    const autoMap    = { a:1.0, b:0.55, c:0.15 };
+    const perdRep    = costoAnual * pctRep * (autoMap[answers.o4]||1.0) * 0.60;
+
+    const horas      = answers.horasReunion || 5;
+    const seguMap    = { a:0.10, b:0.35, c:0.55, d:0.75 };
+    const perdReunion= costoAnual * (horas/45) * (seguMap[answers.o6]||0.55) * 0.50;
+
+    const retraMap   = { a:0.01, b:0.04, c:0.09, d:0.14 };
+    const perdRetrab = costoAnual * (retraMap[answers.o7]||0.04);
+
+    const total      = perdRep + perdReunion + perdRetrab;
+    const pctTotal   = total / costoAnual;
+    const recuperable= total * 0.60;
+
+    const iaMap = { a:'sin uso de IA ni herramientas modernas', b:'con adopción incipiente de herramientas digitales', c:'con algo de adopción digital ya instalada' };
+    const iaTexto = iaMap[answers.o8] || 'sin uso de IA ni herramientas modernas';
+    const nombre  = registro.nombre || '';
+
+    let maturity, tagClass, subText, ctaText;
+    if (pctTotal < 0.12) {
+      maturity='Eficiencia relativamente alta'; tagClass='tag-high';
+      subText=`Tu equipo de ${personas} personas opera con un nivel de pérdida bajo (${Math.round(pctTotal*100)}% del costo anual), ${iaTexto}. Hay oportunidades puntuales de mejora, pero la base está bien.`;
+      ctaText='Incluso con buena eficiencia, hay un siguiente nivel: identificar qué herramientas de IA pueden multiplicar la capacidad de tu equipo sin aumentar dotación. Agenda 30 minutos para explorar ese camino.';
+    } else if (pctTotal < 0.25) {
+      maturity='Eficiencia moderada — hay recuperable'; tagClass='tag-mid';
+      subText=`Tu equipo de ${personas} personas pierde el ${Math.round(pctTotal*100)}% de su costo anual en ineficiencias evitables, ${iaTexto}. La mayor parte es recuperable en menos de 90 días.`;
+      ctaText='El 60% de esta pérdida se puede recuperar con herramientas que ya existen y cuestan casi nada. Agenda 30 minutos para revisar qué aplica exactamente a tu caso.';
+    } else {
+      maturity='Pérdida operacional significativa'; tagClass='tag-low';
+      subText=`Tu equipo de ${personas} personas está perdiendo el ${Math.round(pctTotal*100)}% de su costo anual — ${iaTexto}. Este nivel de ineficiencia es uno de los principales frenos al crecimiento.`;
+      ctaText='Esta pérdida no es un problema de personas — es un problema de sistemas. Con las herramientas correctas, buena parte de esto se puede recuperar antes de que termine el trimestre. Agenda 30 minutos para revisar el diagnóstico en detalle.';
+    }
+
+    // Render resultado
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.getElementById('resultado').classList.add('active');
+    document.getElementById('prog').style.width = '100%';
+    document.getElementById('step-label').textContent = 'Diagnóstico completado';
+    document.getElementById('step-pct').textContent = '100%';
+    document.getElementById('maturity-tag').textContent = maturity;
+    document.getElementById('maturity-tag').className   = 'maturity-tag ' + tagClass;
+    document.getElementById('res-num').textContent      = fmt(total) + ' / año';
+    document.getElementById('res-sub').textContent      = subText;
+    document.getElementById('rec-90').textContent       = fmt(recuperable);
+    document.getElementById('rec-pct').textContent      = Math.round(pctTotal*100) + '%';
+    document.getElementById('cta-greeting').textContent = nombre ? nombre + ', esto es lo que puedes hacer ahora:' : '';
+    document.getElementById('cta-text').textContent     = ctaText;
+
+    const maxBar = Math.max(perdRep, perdReunion, perdRetrab, 1);
+    document.getElementById('amt1').textContent = fmt(perdRep);     document.getElementById('bar1').style.width = Math.round(perdRep/maxBar*100)+'%';
+    document.getElementById('amt2').textContent = fmt(perdReunion); document.getElementById('bar2').style.width = Math.round(perdReunion/maxBar*100)+'%';
+    document.getElementById('amt3').textContent = fmt(perdRetrab);  document.getElementById('bar3').style.width = Math.round(perdRetrab/maxBar*100)+'%';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Enviar a Google Sheets via iframe (evita CORS)
+    enviarASheets({
+      ...registro,
+      personas,
+      o2: answers.o2, o3: answers.o3, o4: answers.o4,
+      horasReunion: horas,
+      o6: answers.o6, o7: answers.o7, o8: answers.o8,
+      perdidaTotal: fmt(total),
+      pctTotal: Math.round(pctTotal*100),
+      recuperable90: fmt(recuperable),
+      nivelMadurez: maturity
+    });
+  }
+
+  function enviarASheets(data) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT') {
+      setSaveStatus('error', 'URL de Apps Script no configurada');
+      return;
+    }
+
+    setSaveStatus('saving', 'Guardando tu diagnóstico...');
+
+    // Iframe invisible como destino del formulario — evita problema de CORS
+    const iframeId = 'ifs-' + Date.now();
+    const iframe   = document.createElement('iframe');
+    iframe.name    = iframeId;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const form    = document.createElement('form');
+    form.method   = 'POST';
+    form.action   = APPS_SCRIPT_URL;
+    form.target   = iframeId;
+    form.style.display = 'none';
+
+    const input   = document.createElement('input');
+    input.type    = 'hidden';
+    input.name    = 'payload';
+    input.value   = encodeURIComponent(JSON.stringify(data));
+    form.appendChild(input);
+    document.body.appendChild(form);
+
+    iframe.onload = () => {
+      setSaveStatus('saved', 'Diagnóstico guardado correctamente');
+      setTimeout(() => {
+        try { document.body.removeChild(form); document.body.removeChild(iframe); } catch(e){}
+      }, 2000);
+    };
+
+    form.submit();
+  }
+
+  function setSaveStatus(type, msg) {
+    document.getElementById('save-dot').className = 'save-dot ' + type;
+    document.getElementById('save-msg').textContent = msg;
+  }
+
+  function reiniciar() {
+    Object.keys(answers).forEach(k => delete answers[k]);
+    Object.keys(registro).forEach(k => delete registro[k]);
+    consentido = false;
+    document.getElementById('resultado').classList.remove('active');
+    document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+    ['n2','n3','n4','n6','n7','n8'].forEach(id => { const b=document.getElementById(id); if(b) b.disabled=true; });
+    ['f-nombre','f-empresa','f-cargo','f-email','f-telefono'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.value=''; el.classList.remove('invalid'); }
+    });
+    document.getElementById('f-industria').value = '';
+    document.getElementById('f-industria').classList.remove('invalid');
+    ['e-nombre','e-empresa','e-industria','e-cargo','e-email','e-consent'].forEach(id => {
+      document.getElementById(id).style.display = 'none';
+    });
+    document.getElementById('consent-wrap').classList.remove('checked');
+    r1.value=12; v1.innerHTML='12 <span>personas</span>';
+    r5.value=5;  v5.innerHTML='5 <span>horas / semana por persona</span>';
+    setSaveStatus('','');
+    showStep(0);
+  }
+</script>
+</body>
+</html>
