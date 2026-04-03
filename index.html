@@ -483,7 +483,7 @@
     setSaveStatus('saving', 'Guardando tu diagnóstico...');
     fetch(APPS_SCRIPT_URL, {
       method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/plain' },
       body: JSON.stringify(data)
     })
     .then(() => setSaveStatus('saved', 'Diagnóstico guardado correctamente'))
