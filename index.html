@@ -3,35 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Diagnóstico de Eficiencia Operacional</title>
+  <title>Diagnóstico de Eficiencia Operacional — Spherical × Zenit</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg: #ffffff; --bg-secondary: #f7f7f5;
       --text-primary: #1a1a1a; --text-secondary: #6b6b6b; --text-tertiary: #9a9a9a;
-      --border-light: rgba(0,0,0,0.1); --border-medium: rgba(0,0,0,0.18); --border-strong: rgba(0,0,0,0.3);
+      --border-light: rgba(0,0,0,0.1); --border-medium: rgba(0,0,0,0.18); --border-strong: rgba(0,0,0,0.35);
       --radius-md: 8px; --radius-lg: 12px;
       --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
     }
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #1a1a1a; --bg-secondary: #242424;
-        --text-primary: #f0f0f0; --text-secondary: #a0a0a0; --text-tertiary: #666666;
-        --border-light: rgba(255,255,255,0.08); --border-medium: rgba(255,255,255,0.14); --border-strong: rgba(255,255,255,0.28);
+        --text-primary: #f0f0f0; --text-secondary: #a0a0a0; --text-tertiary: #606060;
+        --border-light: rgba(255,255,255,0.08); --border-medium: rgba(255,255,255,0.15); --border-strong: rgba(255,255,255,0.3);
       }
     }
     body { font-family: var(--font); background: var(--bg); color: var(--text-primary); min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem 4rem; }
     .shell { width: 100%; max-width: 620px; }
+
+    /* Header */
     .header { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 0.5px solid var(--border-light); }
     .header-brand { font-size: 12px; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
     .header h1 { font-size: 22px; font-weight: 500; line-height: 1.3; }
+
+    /* Progress */
     .progress-wrap { margin-bottom: 2.5rem; }
     .progress-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-tertiary); margin-bottom: 8px; }
     .progress-bar { height: 2px; background: var(--border-light); border-radius: 2px; }
     .progress-fill { height: 100%; background: var(--text-primary); border-radius: 2px; transition: width 0.4s ease; }
+
+    /* Steps */
     .step { display: none; } .step.active { display: block; }
     .step-title { font-size: 20px; font-weight: 500; line-height: 1.4; margin-bottom: 0.5rem; }
     .step-sub { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 2rem; }
+
+    /* Registration fields */
+    .field-group { display: grid; gap: 14px; margin-bottom: 2rem; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+    .field input {
+      width: 100%; padding: 12px 14px;
+      background: var(--bg); color: var(--text-primary);
+      border: 0.5px solid var(--border-medium); border-radius: var(--radius-md);
+      font-size: 15px; font-family: var(--font);
+      outline: none; transition: border-color 0.15s;
+    }
+    .field input:focus { border-color: var(--text-primary); }
+    .field input::placeholder { color: var(--text-tertiary); }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field-optional { font-size: 11px; color: var(--text-tertiary); margin-left: 4px; font-weight: 400; }
+
+    /* Options */
     .options { display: grid; gap: 10px; margin-bottom: 0.5rem; }
     .option { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border: 0.5px solid var(--border-medium); border-radius: var(--radius-lg); cursor: pointer; background: var(--bg); transition: border-color 0.15s, background 0.15s; text-align: left; width: 100%; font-family: var(--font); }
     .option:hover { border-color: var(--border-strong); background: var(--bg-secondary); }
@@ -41,6 +65,8 @@
     .option.selected .option-dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--bg); }
     .option-label { font-size: 15px; color: var(--text-primary); line-height: 1.4; }
     .option-hint { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+    /* Slider */
     .slider-section { margin: 0.5rem 0 2rem; }
     .slider-display { font-size: 36px; font-weight: 500; line-height: 1; margin-bottom: 0.5rem; }
     .slider-display span { font-size: 16px; font-weight: 400; color: var(--text-secondary); margin-left: 4px; }
@@ -48,11 +74,19 @@
     input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--text-primary); cursor: pointer; border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--border-medium); }
     input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--text-primary); cursor: pointer; border: 2px solid var(--bg); }
     .slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-tertiary); }
+
+    /* Nav */
     .nav { display: flex; gap: 10px; align-items: center; margin-top: 2rem; }
     .btn-next { padding: 12px 28px; background: var(--text-primary); color: var(--bg); border: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: opacity 0.15s; }
     .btn-next:hover { opacity: 0.8; } .btn-next:disabled { opacity: 0.25; cursor: not-allowed; }
     .btn-back { padding: 12px 20px; background: transparent; color: var(--text-secondary); border: 0.5px solid var(--border-medium); border-radius: var(--radius-md); font-size: 15px; cursor: pointer; font-family: var(--font); transition: background 0.15s; }
     .btn-back:hover { background: var(--bg-secondary); }
+
+    /* Error message */
+    .field-error { font-size: 12px; color: #A32D2D; margin-top: 4px; display: none; }
+    .field input.invalid { border-color: #E24B4A; }
+
+    /* Result */
     .result { display: none; } .result.active { display: block; }
     .result-eyebrow { font-size: 12px; font-weight: 500; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
     .maturity-tag { display: inline-block; padding: 4px 12px; border-radius: var(--radius-md); font-size: 12px; font-weight: 500; margin-bottom: 1.25rem; }
@@ -71,19 +105,25 @@
     .bar-wrap { height: 3px; background: var(--border-light); border-radius: 2px; }
     .bar-fill { height: 3px; background: var(--text-primary); border-radius: 2px; transition: width 0.6s ease; }
     .breakdown-amount { font-size: 15px; font-weight: 500; white-space: nowrap; }
+
+    /* CTA */
     .cta-box { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: 1.5rem; margin-top: 2rem; }
+    .cta-greeting { font-size: 13px; color: var(--text-secondary); margin-bottom: 0.5rem; }
     .cta-text { font-size: 15px; line-height: 1.7; margin-bottom: 1.25rem; }
     .cta-btn { display: block; width: 100%; padding: 14px; background: var(--text-primary); color: var(--bg); border: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 500; cursor: pointer; font-family: var(--font); text-align: center; text-decoration: none; transition: opacity 0.15s; }
     .cta-btn:hover { opacity: 0.82; }
+
+    /* Save status */
     .save-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-tertiary); margin-top: 1rem; min-height: 20px; }
     .save-dot { width: 7px; height: 7px; border-radius: 50%; background: transparent; flex-shrink: 0; }
     .save-dot.saving { background: #EF9F27; animation: pulse 1s infinite; }
     .save-dot.saved { background: #639922; }
     .save-dot.error { background: #E24B4A; }
-    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+    @keyframes pulse { 0%,100%{opacity:1;}50%{opacity:0.3;} }
+
     .restart { display: inline-block; margin-top: 1.25rem; font-size: 13px; color: var(--text-tertiary); cursor: pointer; text-decoration: underline; background: none; border: none; font-family: var(--font); padding: 0; }
     .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 0.5px solid var(--border-light); font-size: 12px; color: var(--text-tertiary); line-height: 1.6; }
-    @media (max-width: 480px) { .result-number { font-size: 38px; } .recovery-box { flex-direction: column; } }
+    @media (max-width: 480px) { .result-number { font-size: 38px; } .recovery-box { flex-direction: column; } .field-row { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -96,14 +136,51 @@
 
   <div class="progress-wrap">
     <div class="progress-meta">
-      <span id="step-label">Pregunta 1 de 8</span>
+      <span id="step-label">Paso 1 de 9</span>
       <span id="step-pct">10%</span>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="prog" style="width:10%"></div></div>
   </div>
 
-  <!-- S1 -->
-  <div class="step active" id="s1">
+  <!-- STEP 0: Registro -->
+  <div class="step active" id="s0">
+    <h2 class="step-title">Antes de comenzar, cuéntanos quién eres</h2>
+    <p class="step-sub">Usaremos esta información solo para enviarte el análisis completo y hacer seguimiento contigo si lo necesitas.</p>
+    <div class="field-group">
+      <div class="field-row">
+        <div class="field">
+          <label for="f-nombre">Nombre <span style="color:var(--text-tertiary)">*</span></label>
+          <input type="text" id="f-nombre" placeholder="Tu nombre" autocomplete="given-name">
+          <span class="field-error" id="e-nombre">Por favor ingresa tu nombre</span>
+        </div>
+        <div class="field">
+          <label for="f-empresa">Empresa <span style="color:var(--text-tertiary)">*</span></label>
+          <input type="text" id="f-empresa" placeholder="Nombre de tu empresa" autocomplete="organization">
+          <span class="field-error" id="e-empresa">Por favor ingresa tu empresa</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-cargo">Cargo <span style="color:var(--text-tertiary)">*</span></label>
+        <input type="text" id="f-cargo" placeholder="Ej: Gerente General, Dueño, Gerente de Operaciones" autocomplete="organization-title">
+        <span class="field-error" id="e-cargo">Por favor ingresa tu cargo</span>
+      </div>
+      <div class="field">
+        <label for="f-email">Email <span style="color:var(--text-tertiary)">*</span></label>
+        <input type="email" id="f-email" placeholder="tu@empresa.com" autocomplete="email">
+        <span class="field-error" id="e-email">Por favor ingresa un email válido</span>
+      </div>
+      <div class="field">
+        <label for="f-telefono">Teléfono <span class="field-optional">(opcional)</span></label>
+        <input type="tel" id="f-telefono" placeholder="+56 9 xxxx xxxx" autocomplete="tel">
+      </div>
+    </div>
+    <div class="nav">
+      <button class="btn-next" onclick="registrar()">Comenzar diagnóstico →</button>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="step" id="s1">
     <h2 class="step-title">¿Cuántas personas tiene el equipo que quieres evaluar?</h2>
     <p class="step-sub">Puede ser un área específica o toda la empresa. Si no estás seguro, usa el número total de colaboradores.</p>
     <div class="slider-section">
@@ -111,10 +188,10 @@
       <input type="range" min="2" max="100" value="12" step="1" id="r1">
       <div class="slider-labels"><span>2</span><span>25</span><span>50</span><span>100</span></div>
     </div>
-    <div class="nav"><button class="btn-next" onclick="next(1)">Continuar →</button></div>
+    <div class="nav"><button class="btn-back" onclick="back(1)">← Volver</button><button class="btn-next" onclick="next(1)">Continuar →</button></div>
   </div>
 
-  <!-- S2 -->
+  <!-- STEP 2 -->
   <div class="step" id="s2">
     <h2 class="step-title">¿Cuál es el costo mensual promedio por persona, incluyendo cargas?</h2>
     <p class="step-sub">Incluye sueldo bruto más todas las cargas asociadas al empleador.</p>
@@ -127,7 +204,7 @@
     <div class="nav"><button class="btn-back" onclick="back(2)">← Volver</button><button class="btn-next" id="n2" disabled onclick="next(2)">Continuar →</button></div>
   </div>
 
-  <!-- S3 -->
+  <!-- STEP 3 -->
   <div class="step" id="s3">
     <h2 class="step-title">¿Qué porcentaje del tiempo dedica tu equipo a tareas que se repiten igual cada semana?</h2>
     <p class="step-sub">Tareas que no requieren criterio especial: ingresos de datos, reportes manuales, reenvío de información, copiar de un sistema a otro, etc.</p>
@@ -140,7 +217,7 @@
     <div class="nav"><button class="btn-back" onclick="back(3)">← Volver</button><button class="btn-next" id="n3" disabled onclick="next(3)">Continuar →</button></div>
   </div>
 
-  <!-- S4 -->
+  <!-- STEP 4 -->
   <div class="step" id="s4">
     <h2 class="step-title">¿Cuántas de esas tareas repetitivas están automatizadas o gestionadas con herramientas digitales hoy?</h2>
     <p class="step-sub">Incluye cualquier software, macro, integración o herramienta que ejecute la tarea sin intervención manual constante.</p>
@@ -152,7 +229,7 @@
     <div class="nav"><button class="btn-back" onclick="back(4)">← Volver</button><button class="btn-next" id="n4" disabled onclick="next(4)">Continuar →</button></div>
   </div>
 
-  <!-- S5 -->
+  <!-- STEP 5 -->
   <div class="step" id="s5">
     <h2 class="step-title">¿Cuántas horas semanales dedica tu equipo a reuniones internas?</h2>
     <p class="step-sub">Promedio por persona. Incluye reuniones de equipo, coordinaciones, revisiones de avance y cualquier junta interna.</p>
@@ -164,7 +241,7 @@
     <div class="nav"><button class="btn-back" onclick="back(5)">← Volver</button><button class="btn-next" onclick="next(5)">Continuar →</button></div>
   </div>
 
-  <!-- S6 -->
+  <!-- STEP 6 -->
   <div class="step" id="s6">
     <h2 class="step-title">Cuando termina una reunión, ¿qué pasa con los compromisos y tareas que surgieron?</h2>
     <p class="step-sub">Sé honesto. Esta es la pregunta que más impacta el resultado.</p>
@@ -177,7 +254,7 @@
     <div class="nav"><button class="btn-back" onclick="back(6)">← Volver</button><button class="btn-next" id="n6" disabled onclick="next(6)">Continuar →</button></div>
   </div>
 
-  <!-- S7 -->
+  <!-- STEP 7 -->
   <div class="step" id="s7">
     <h2 class="step-title">¿Con qué frecuencia tu equipo repite trabajo por errores, versiones desactualizadas o malentendidos?</h2>
     <p class="step-sub">Incluye rehacer informes, corregir errores por información incorrecta, o trabajar sobre versiones antiguas de documentos.</p>
@@ -190,7 +267,7 @@
     <div class="nav"><button class="btn-back" onclick="back(7)">← Volver</button><button class="btn-next" id="n7" disabled onclick="next(7)">Continuar →</button></div>
   </div>
 
-  <!-- S8 -->
+  <!-- STEP 8 -->
   <div class="step" id="s8">
     <h2 class="step-title">¿Tu equipo usa inteligencia artificial o herramientas digitales avanzadas en su trabajo diario?</h2>
     <p class="step-sub">Incluye herramientas como ChatGPT, Copilot, automatizaciones, integraciones entre sistemas, etc.</p>
@@ -219,9 +296,10 @@
       <div class="breakdown-row"><div class="breakdown-left"><div class="breakdown-name">Retrabajo y errores evitables</div><div class="bar-wrap"><div class="bar-fill" id="bar3" style="width:0%"></div></div></div><div class="breakdown-amount" id="amt3"></div></div>
     </div>
     <div class="cta-box">
+      <p class="cta-greeting" id="cta-greeting"></p>
       <p class="cta-text" id="cta-text"></p>
-      <!-- EDITAR: reemplaza href con tu link de agendamiento -->
-      <a href="#" class="cta-btn">Agenda 30 minutos para revisar estos números →</a>
+      <!-- EDITAR: reemplaza href con tu link de agendamiento (Calendly, Cal.com, etc.) -->
+      <a href="#" id="cta-btn" class="cta-btn" target="_blank" rel="noopener">Agenda 30 minutos para revisar estos números →</a>
     </div>
     <div class="save-status"><div class="save-dot" id="save-dot"></div><span id="save-msg"></span></div>
     <button class="restart" onclick="reiniciar()">Hacer el diagnóstico de otro equipo</button>
@@ -232,13 +310,15 @@
 </div>
 <script>
   // ─────────────────────────────────────────────────────────────────────
-  // ÚNICA LÍNEA QUE DEBES EDITAR:
-  // Después de desplegar el Apps Script, pega aquí la URL que te entrega.
-  // ─────────────────────────────────────────────────────────────────────
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzEOHzrjCRmqajXFrHFBZ6aztGUuLRlIGhXjFtwIKO7X08f9UcnsS3xni_0wuPLXlc/exec';
+  // CONFIGURACIÓN — edita estas dos líneas:
+  const APPS_SCRIPT_URL = 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
+  const AGENDAMIENTO_URL = 'PEGA_AQUI_TU_LINK_DE_CALENDLY_O_CAL';
   // ─────────────────────────────────────────────────────────────────────
 
   const answers = {};
+  const registro = {};
+
+  // Sliders
   const r1 = document.getElementById('r1');
   const v1 = document.getElementById('v1');
   r1.addEventListener('input', () => { v1.innerHTML = r1.value + ' <span>personas</span>'; });
@@ -246,24 +326,67 @@
   const v5 = document.getElementById('v5');
   r5.addEventListener('input', () => { v5.innerHTML = r5.value + ' <span>horas / semana por persona</span>'; });
 
+  // Progress — steps 0..8 + resultado = 10 estados, mostramos 1..9 en la barra
   function updateProgress(step) {
-    const pct = Math.round((step / 8) * 100);
-    document.getElementById('prog').style.width = pct + '%';
-    document.getElementById('step-label').textContent = 'Pregunta ' + step + ' de 8';
-    document.getElementById('step-pct').textContent = pct + '%';
+    const pct = Math.round(((step + 1) / 10) * 100);
+    document.getElementById('prog').style.width = Math.min(pct, 100) + '%';
+    document.getElementById('step-label').textContent = step === 0 ? 'Paso 1 de 9 — Registro' : 'Pregunta ' + step + ' de 8';
+    document.getElementById('step-pct').textContent = Math.min(pct, 100) + '%';
   }
+
   function showStep(n) {
     document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
     const el = document.getElementById('s' + n);
     if (el) { el.classList.add('active'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
     updateProgress(n);
   }
+
+  // Validar y avanzar desde el registro
+  function registrar() {
+    const nombre  = document.getElementById('f-nombre').value.trim();
+    const empresa = document.getElementById('f-empresa').value.trim();
+    const cargo   = document.getElementById('f-cargo').value.trim();
+    const email   = document.getElementById('f-email').value.trim();
+    const tel     = document.getElementById('f-telefono').value.trim();
+
+    let valid = true;
+
+    function check(val, inputId, errorId, emailCheck) {
+      const input = document.getElementById(inputId);
+      const err   = document.getElementById(errorId);
+      let ok = val.length > 0;
+      if (emailCheck) ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+      if (!ok) { input.classList.add('invalid'); err.style.display = 'block'; valid = false; }
+      else { input.classList.remove('invalid'); err.style.display = 'none'; }
+    }
+
+    check(nombre,  'f-nombre',  'e-nombre',  false);
+    check(empresa, 'f-empresa', 'e-empresa', false);
+    check(cargo,   'f-cargo',   'e-cargo',   false);
+    check(email,   'f-email',   'e-email',   true);
+
+    if (!valid) return;
+
+    registro.nombre   = nombre;
+    registro.empresa  = empresa;
+    registro.cargo    = cargo;
+    registro.email    = email;
+    registro.telefono = tel;
+
+    showStep(1);
+  }
+
   function next(from) {
     if (from === 1) answers.personas = parseInt(r1.value);
     if (from === 5) answers.horasReunion = parseInt(r5.value);
     showStep(from + 1);
   }
-  function back(from) { showStep(from - 1); }
+
+  function back(n) {
+    if (n === 1) showStep(0);
+    else showStep(n - 1);
+  }
+
   function sel(el, group, val) {
     document.querySelectorAll('#' + group + ' .option').forEach(o => o.classList.remove('selected'));
     el.classList.add('selected');
@@ -271,6 +394,7 @@
     const btn = document.getElementById('n' + group.replace('o',''));
     if (btn) btn.disabled = false;
   }
+
   function fmt(n) { return '$' + Math.round(n).toLocaleString('es-CL'); }
 
   function calcular() {
@@ -278,20 +402,26 @@
     const costoMap   = { a:640000, b:1150000, c:2000000, d:3300000 };
     const costoMens  = costoMap[answers.o2] || 1150000;
     const costoAnual = personas * costoMens * 12;
+
     const repMap     = { a:0.05, b:0.17, c:0.32, d:0.45 };
     const pctRep     = repMap[answers.o3] || 0.17;
     const autoMap    = { a:1.0, b:0.55, c:0.15 };
     const perdRep    = costoAnual * pctRep * (autoMap[answers.o4]||1.0) * 0.60;
+
     const horas      = answers.horasReunion || 5;
     const seguMap    = { a:0.10, b:0.35, c:0.55, d:0.75 };
     const perdReunion= costoAnual * (horas/45) * (seguMap[answers.o6]||0.55) * 0.50;
+
     const retraMap   = { a:0.01, b:0.04, c:0.09, d:0.14 };
     const perdRetrab = costoAnual * (retraMap[answers.o7]||0.04);
+
     const total      = perdRep + perdReunion + perdRetrab;
     const pctTotal   = total / costoAnual;
     const recuperable= total * 0.60;
+
     const iaMap = { a:'sin uso de IA ni herramientas modernas', b:'con adopción incipiente de herramientas digitales', c:'con algo de adopción digital ya instalada' };
     const iaTexto = iaMap[answers.o8] || 'sin uso de IA ni herramientas modernas';
+    const nombre  = registro.nombre || '';
 
     let maturity, tagClass, subText, ctaText;
     if (pctTotal < 0.12) {
@@ -308,38 +438,56 @@
       ctaText='Esta pérdida no es un problema de personas — es un problema de sistemas. Con las herramientas correctas, buena parte de esto se puede recuperar antes de que termine el trimestre. Agenda 30 minutos para revisar el diagnóstico en detalle.';
     }
 
+    // Render resultado
     document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
     document.getElementById('resultado').classList.add('active');
     document.getElementById('prog').style.width = '100%';
     document.getElementById('step-label').textContent = 'Diagnóstico completado';
     document.getElementById('step-pct').textContent = '100%';
-    document.getElementById('maturity-tag').textContent = maturity;
-    document.getElementById('maturity-tag').className = 'maturity-tag ' + tagClass;
-    document.getElementById('res-num').textContent = fmt(total) + ' / año';
-    document.getElementById('res-sub').textContent = subText;
-    document.getElementById('rec-90').textContent = fmt(recuperable);
-    document.getElementById('rec-pct').textContent = Math.round(pctTotal*100) + '%';
-    document.getElementById('cta-text').textContent = ctaText;
-    const maxBar = Math.max(perdRep, perdReunion, perdRetrab, 1);
-    document.getElementById('amt1').textContent = fmt(perdRep);
-    document.getElementById('bar1').style.width = Math.round(perdRep/maxBar*100) + '%';
-    document.getElementById('amt2').textContent = fmt(perdReunion);
-    document.getElementById('bar2').style.width = Math.round(perdReunion/maxBar*100) + '%';
-    document.getElementById('amt3').textContent = fmt(perdRetrab);
-    document.getElementById('bar3').style.width = Math.round(perdRetrab/maxBar*100) + '%';
-    window.scrollTo({ top:0, behavior:'smooth' });
 
-    enviarASheets({ personas, o2:answers.o2, o3:answers.o3, o4:answers.o4, horasReunion:horas, o6:answers.o6, o7:answers.o7, o8:answers.o8, perdidaTotal:fmt(total), pctTotal:Math.round(pctTotal*100), recuperable90:fmt(recuperable), nivelMadurez:maturity });
+    document.getElementById('maturity-tag').textContent = maturity;
+    document.getElementById('maturity-tag').className   = 'maturity-tag ' + tagClass;
+    document.getElementById('res-num').textContent      = fmt(total) + ' / año';
+    document.getElementById('res-sub').textContent      = subText;
+    document.getElementById('rec-90').textContent       = fmt(recuperable);
+    document.getElementById('rec-pct').textContent      = Math.round(pctTotal*100) + '%';
+    document.getElementById('cta-greeting').textContent = nombre ? nombre + ', esto es lo que puedes hacer ahora:' : '';
+    document.getElementById('cta-text').textContent     = ctaText;
+    document.getElementById('cta-btn').href             = AGENDAMIENTO_URL || '#';
+
+    const maxBar = Math.max(perdRep, perdReunion, perdRetrab, 1);
+    document.getElementById('amt1').textContent = fmt(perdRep);    document.getElementById('bar1').style.width = Math.round(perdRep/maxBar*100)+'%';
+    document.getElementById('amt2').textContent = fmt(perdReunion);document.getElementById('bar2').style.width = Math.round(perdReunion/maxBar*100)+'%';
+    document.getElementById('amt3').textContent = fmt(perdRetrab); document.getElementById('bar3').style.width = Math.round(perdRetrab/maxBar*100)+'%';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Guardar en Google Sheets
+    enviarASheets({
+      ...registro,
+      personas,
+      o2: answers.o2, o3: answers.o3, o4: answers.o4,
+      horasReunion: horas,
+      o6: answers.o6, o7: answers.o7, o8: answers.o8,
+      perdidaTotal: fmt(total),
+      pctTotal: Math.round(pctTotal*100),
+      recuperable90: fmt(recuperable),
+      nivelMadurez: maturity
+    });
   }
 
   function enviarASheets(data) {
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT') {
-      setSaveStatus('error','URL de Apps Script no configurada'); return;
+      setSaveStatus('error', 'URL de Apps Script no configurada'); return;
     }
-    setSaveStatus('saving','Guardando respuestas...');
-    fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) })
-      .then(() => setSaveStatus('saved','Respuestas guardadas en Google Sheets'))
-      .catch(() => setSaveStatus('error','No se pudieron guardar las respuestas'));
+    setSaveStatus('saving', 'Guardando tu diagnóstico...');
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(() => setSaveStatus('saved', 'Diagnóstico guardado correctamente'))
+    .catch(() => setSaveStatus('error', 'No se pudo guardar el diagnóstico'));
   }
 
   function setSaveStatus(type, msg) {
@@ -349,13 +497,16 @@
 
   function reiniciar() {
     Object.keys(answers).forEach(k => delete answers[k]);
+    Object.keys(registro).forEach(k => delete registro[k]);
     document.getElementById('resultado').classList.remove('active');
     document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
     ['n2','n3','n4','n6','n7','n8'].forEach(id => { const b=document.getElementById(id); if(b) b.disabled=true; });
+    ['f-nombre','f-empresa','f-cargo','f-email','f-telefono'].forEach(id => { document.getElementById(id).value=''; document.getElementById(id).classList.remove('invalid'); });
+    ['e-nombre','e-empresa','e-cargo','e-email'].forEach(id => { document.getElementById(id).style.display='none'; });
     r1.value=12; v1.innerHTML='12 <span>personas</span>';
-    r5.value=5; v5.innerHTML='5 <span>horas / semana por persona</span>';
+    r5.value=5;  v5.innerHTML='5 <span>horas / semana por persona</span>';
     setSaveStatus('','');
-    showStep(1);
+    showStep(0);
   }
 </script>
 </body>
